@@ -65,6 +65,9 @@ def get_functions(api_version):
     return results
 
 
+anythingNew = False
+countNewFunctions = 0
+countOldFunctions = 0
 def get_function_arguments(api_version, function_name):
     """Get all possible arguments for a function call
     WARNING: Doesn't check if entire function against api_version
@@ -108,6 +111,10 @@ def get_function_arguments(api_version, function_name):
     # List of == Functions ==
     sections = wikicode.get_sections(levels=[2], matches=r"(Function)")
     for section in sections:
+        global anythingNew
+        global countNewFunctions
+        global countOldFunctions
+        anythingNew = False
         # Check first template in function section for newin/oldin
         try:
             f_temp = section.filter_templates()[0]
@@ -116,9 +123,14 @@ def get_function_arguments(api_version, function_name):
             all_args.append([])
             continue
         if f_temp.name == "newin" and api_version < int(str(f_temp.params[1])):
+            print("New in version:" + " " + str(f_temp.params[1]))
+            anythingNew = True
+            countNewFunctions += 1
             # In the next version - skip to next function section
             continue
         elif f_temp.name == "oldin" and int(str(f_temp.params[1])) <= api_version:
+            anythingNew = True
+            countOldFunctions += 1
             # Already removed - skip to next function section
             continue
         # Get the === Arguments === section templates
@@ -133,25 +145,44 @@ def get_function_arguments(api_version, function_name):
                 args = args + extract_args(params[1])
             # These parameters are only available from this version
             elif name in ("New feature", "New_feature"):
-                version = int(str(params[2]))
-                if api_version >= version:
-                    # The second param is a string...so we have to convert it
-                    # to a template object, then we can get its args
-                    t_args = [x.params[1] for x in
-                              params[1].value.filter_templates()]
-                    for t in t_args:
-                        args = args + extract_args(t)
+
+                for param in range(0,len(params)):
+
+                    version = getVersionNumber(params[param])
+
+                    if api_version >= version:
+                        # The second param is a string...so we have to convert it
+                        # to a template object, then we can get its args
+                        t_args = [x.params[1] for x in
+                                  params[1].value.filter_templates()]
+                        for t in t_args:
+                            args = args + extract_args(t)
+
             elif name == "subparam":
                 # Don't support subparams
                 pass
             else:
                 raise Exception("Unsupported template: %s" % name)
         all_args.append(args)
+
     return all_args
+
+def getVersionNumber(string):
+    import re
+
+    # replace dots: 11.0 -> 110
+    result = re.findall(r"([0-9.]*[0-9]+)", str(string))
+    
+    newResult = 0
+    for char in result:
+        newResult = str(char).replace(".","")
+
+    return float(newResult)
+
     
 if __name__ == '__main__':
     if len(sys.argv) == 1:
-        sys.stderr.write("Usage: %s API_VERSION (ie 080)\n" % sys.argv[0])
+        sys.stderr.write("Usage: %s API_VERSION (ie 110 for 11.0)\n" % sys.argv[0])
         sys.exit(1)
 
     api_version = int(sys.argv[1])
@@ -168,6 +199,12 @@ if __name__ == '__main__':
                     api_file.write("%s\n" % function)
                 else:
                     api_file.write('%s,%s\n' % (function, ','.join(args)))
+
+        if not anythingNew:
+            print("\n----No functions were modified----\n")
+        else:
+            print(str(countNewFunctions) + " functions added")
+            print(str(countOldFunctions) + " functions removed")
 
     # Loop through callbacks
     with open('callbacks.txt', 'w') as callback_file:
