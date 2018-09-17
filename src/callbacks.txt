@@ -1,6 +1,7 @@
 love.directorydropped,path
 love.draw
 love.errhand,msg
+love.errorhandler,msg
 love.filedropped,file
 love.focus,focus
 love.gamepadaxis,joystick,axis,value
@@ -14,13 +15,15 @@ love.joystickreleased,joystick,button
 love.joystickremoved,joystick
 love.keypressed,key,scancode,isrepeat
 love.keypressed,key,isrepeat
-love.keyreleased,key
 love.keyreleased,key,scancode
+love.keyreleased,key
 love.load,arg
 love.lowmemory
 love.mousefocus,focus
-love.mousemoved,x,y,dx,dy
+love.mousemoved,x,y,dx,dy,istouch,istouch,istouch
+love.mousepressed,x,y,button,istouch,presses
 love.mousepressed,x,y,button,istouch
+love.mousereleased,x,y,button,istouch,presses
 love.mousereleased,x,y,button,istouch
 love.quit
 love.resize,w,h
